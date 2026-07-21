@@ -1,0 +1,36 @@
+I am proposing to drop raw_orders dot total_amount. The field looks small at the source,
+but it feeds dbt models, an executive dashboard, a machine learning feature table, a
+production churn model, and an Airflow job.
+
+DataHub ChangeGuard checks that change before it reaches production. In a connected
+environment, it calls the DataHub MCP tools get_entities, list_schema_fields, and
+get_lineage. It then reads structured schema, ownership, domain, criticality, and lineage
+data through DataHub's APIs.
+
+I will run the preflight with the default drop-column request.
+
+The result is a one-hundred-out-of-one-hundred risk score. ChangeGuard found six
+downstream assets, five high-criticality consumers, and one Airflow job without an owner.
+The score comes from fixed rules: change type, asset criticality, dependency count,
+lineage depth, and missing ownership. The language model cannot change the score or add
+dependencies.
+
+The graph shows how the field moves through the pipeline. Total amount becomes gross
+revenue in dbt, then lifetime value in the feature table, and finally reaches the churn
+model. The trace records each step used to reach the release decision.
+
+ChangeGuard also produces files that can enter code review. The first file keeps the old
+field during a compatibility window. The second adds dbt tests. The GitHub Actions file
+blocks a schema change without an approval record. The Markdown file captures the
+proposed change, owners, missing ownership, and required rollout.
+
+The repair plan assigns the downstream work to the teams already recorded in DataHub. It
+also blocks the rollout until someone owns the affected Airflow job.
+
+The final action requires a reviewer. After approval, ChangeGuard writes an incident and
+supporting links back to DataHub. Demo mode records the same action in a local audit log
+and does not modify an external instance.
+
+This version covers the complete path from a proposed schema change to impact analysis,
+repair files, human approval, and DataHub writeback. The next step is opening a pull
+request with the generated files.
