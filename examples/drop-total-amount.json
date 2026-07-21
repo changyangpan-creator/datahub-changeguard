@@ -1,0 +1,7 @@
+{
+  "entity_urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,commerce.raw_orders,PROD)",
+  "field": "total_amount",
+  "change_type": "drop_column",
+  "rationale": "Retire a legacy field before the next commerce data contract release."
+}
+

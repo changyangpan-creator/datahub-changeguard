@@ -1,0 +1,16 @@
+version: 2
+
+models:
+  - name: stg_orders
+    description: "Compatibility guard generated from DataHub field lineage."
+    columns:
+      - name: total_amount
+        tests:
+          - not_null:
+              config:
+                severity: warn
+        meta:
+          changeguard:
+            source: raw_orders.total_amount
+            patch_targets: "stg_orders, fct_orders"
+

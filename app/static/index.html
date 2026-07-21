@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DataHub ChangeGuard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://unpkg.com/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <i data-lucide="shield-check"></i>
+        </div>
+        <div>
+          <h1>DataHub ChangeGuard</h1>
+          <p>Schema change preflight</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          <span id="mode-label">Connecting</span>
+        </div>
+        <button class="icon-button" id="refresh-button" title="Refresh metadata">
+          <i data-lucide="refresh-cw"></i>
+        </button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="request-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">Change request</span>
+            <h2>Preflight</h2>
+          </div>
+          <span class="step-badge">01</span>
+        </div>
+
+        <form id="change-form">
+          <label for="entity-select">Data asset</label>
+          <select id="entity-select" required></select>
+
+          <label for="field-select">Field</label>
+          <select id="field-select" required></select>
+
+          <label for="change-type">Proposed change</label>
+          <select id="change-type" required>
+            <option value="drop_column">Drop column</option>
+            <option value="rename_column">Rename column</option>
+            <option value="change_type">Change type</option>
+          </select>
+
+          <div id="new-name-group" class="conditional-field hidden">
+            <label for="new-name">New field name</label>
+            <input id="new-name" value="gross_amount" />
+          </div>
+
+          <div id="new-type-group" class="conditional-field hidden">
+            <label for="new-type">Target type</label>
+            <input id="new-type" value="DECIMAL(18,2)" />
+          </div>
+
+          <label for="rationale">Rationale</label>
+          <textarea
+            id="rationale"
+            rows="4"
+          >Retire a legacy field before the next commerce data contract release.</textarea>
+
+          <button class="primary-button" id="analyze-button" type="submit">
+            <i data-lucide="scan-search"></i>
+            <span>Run preflight</span>
+          </button>
+        </form>
+
+        <section class="source-context" id="source-context">
+          <div class="empty-state compact">
+            <i data-lucide="database"></i>
+            <span>Select an asset</span>
+          </div>
+        </section>
+      </aside>
+
+      <section class="analysis-area">
+        <div class="analysis-toolbar">
+          <div>
+            <span class="eyebrow">Field-level lineage</span>
+            <h2 id="graph-title">Impact graph</h2>
+          </div>
+          <div class="graph-legend">
+            <span><i class="legend-dot source"></i>Source</span>
+            <span><i class="legend-dot critical"></i>Critical</span>
+            <span><i class="legend-dot standard"></i>Downstream</span>
+          </div>
+        </div>
+
+        <div id="lineage-graph" class="lineage-graph">
+          <div class="empty-state">
+            <i data-lucide="git-fork"></i>
+            <strong>No preflight yet</strong>
+            <span>Lineage evidence will appear here.</span>
+          </div>
+        </div>
+
+        <div class="trace-strip">
+          <div class="trace-heading">
+            <span class="eyebrow">Agent trace</span>
+            <span id="trace-count">0 stages</span>
+          </div>
+          <div id="trace-list" class="trace-list">
+            <div class="trace-placeholder"></div>
+            <div class="trace-placeholder"></div>
+            <div class="trace-placeholder"></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="review-panel">
+        <div class="risk-header">
+          <div>
+            <span class="eyebrow">Release decision</span>
+            <h2>Risk review</h2>
+          </div>
+          <div class="risk-score empty" id="risk-score">
+            <strong>--</strong>
+            <span>/100</span>
+          </div>
+        </div>
+
+        <div class="decision-banner neutral" id="decision-banner">
+          <i data-lucide="circle-dashed"></i>
+          <div>
+            <strong>Awaiting analysis</strong>
+            <span>No release decision yet</span>
+          </div>
+        </div>
+
+        <p class="summary" id="summary">
+          Submit a change request to calculate evidence-based deployment risk.
+        </p>
+
+        <div class="metric-grid">
+          <div class="metric">
+            <span>Assets</span>
+            <strong id="asset-count">0</strong>
+          </div>
+          <div class="metric">
+            <span>Owners</span>
+            <strong id="owner-count">0</strong>
+          </div>
+          <div class="metric">
+            <span>Unowned</span>
+            <strong id="unowned-count">0</strong>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <h3>Impacted assets</h3>
+          <span id="impact-count">0</span>
+        </div>
+        <div class="impact-list" id="impact-list">
+          <div class="empty-state compact">
+            <i data-lucide="layers-3"></i>
+            <span>No impacted assets</span>
+          </div>
+        </div>
+
+        <button class="writeback-button" id="writeback-button" disabled>
+          <i data-lucide="database-zap"></i>
+          <span>Approve DataHub writeback</span>
+        </button>
+      </aside>
+
+      <section class="artifact-workbench">
+        <div class="artifact-header">
+          <div>
+            <span class="eyebrow">Generated repair set</span>
+            <h2>Review artifacts</h2>
+          </div>
+          <div class="artifact-actions">
+            <button class="icon-button" id="copy-button" title="Copy artifact" disabled>
+              <i data-lucide="copy"></i>
+            </button>
+            <button class="icon-button" id="download-button" title="Download artifact" disabled>
+              <i data-lucide="download"></i>
+            </button>
+          </div>
+        </div>
+        <div class="artifact-tabs" id="artifact-tabs">
+          <span class="tab-placeholder">Artifacts appear after analysis</span>
+        </div>
+        <pre class="artifact-code"><code id="artifact-code"># No generated artifact selected</code></pre>
+      </section>
+
+      <section class="plan-panel">
+        <div class="panel-heading">
+          <div>
+            <span class="eyebrow">Rollout sequence</span>
+            <h2>Repair plan</h2>
+          </div>
+          <span class="step-badge">02</span>
+        </div>
+        <div id="plan-list" class="plan-list">
+          <div class="empty-state">
+            <i data-lucide="list-checks"></i>
+            <strong>No rollout plan</strong>
+            <span>Generated from DataHub evidence.</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status"></div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
+

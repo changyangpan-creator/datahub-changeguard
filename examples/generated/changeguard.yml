@@ -1,0 +1,20 @@
+name: DataHub ChangeGuard
+
+on:
+  pull_request:
+    paths:
+      - "models/**"
+
+jobs:
+  lineage-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run schema compatibility checks
+        run: |
+          dbt deps
+          dbt build --select state:modified+ --fail-fast
+      - name: Enforce ChangeGuard approval
+        run: |
+          test -f changeguard/approved/raw_orders-total_amount.json
+
